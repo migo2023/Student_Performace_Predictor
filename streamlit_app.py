@@ -1,40 +1,46 @@
 import altair as alt
-import numpy as np
 import pandas as pd
+import numpy as np
+#import matplotlib.pyplot as plt
+from sklearn.linear_model import SGDRegressor
+from sklearn.preprocessing import StandardScaler
 import streamlit as st
 
-"""
-# Welcome to Streamlit!
+dataset = pd.read_csv('training_data_student_perf.csv')
+X_train = dataset[['Hours Studied', 'Previous Scores', 'Extracurricular Activities', 'Sleep Hours', 'Sample Question Papers Practiced']]
+y_train = dataset['Performance Index']
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:.
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+for i in range(0, X_train.shape[0]):
+  if X_train.at[i, "Extracurricular Activities"] == "Yes":
+    X_train.at[i, "Extracurricular Activities"] = 1
+  elif X_train.at[i, "Extracurricular Activities"] == "No":
+    X_train.at[i, "Extracurricular Activities"] = 0
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+scaler = StandardScaler()
+X_norm = scaler.fit_transform(X_train)
 
-num_points = st.slider("Number of points in spiral", 1, 10000, 1100)
-num_turns = st.slider("Number of turns in spiral", 1, 300, 31)
+num_iters = st.slider("Number of iterations for running gradient descent", 1, 100000, 10000)
+sgdr = SGDRegressor(max_iter=num_iters)
+sgdr.fit(X_norm, y_train)
 
-indices = np.linspace(0, 1, num_points)
-theta = 2 * np.pi * num_turns * indices
-radius = indices
+b_norm = sgdr.intercept_
+w_norm = sgdr.coef_
 
-x = radius * np.cos(theta)
-y = radius * np.sin(theta)
+test_dataset = pd.read_csv('test_data_student_perf.csv')
+X_test = test_dataset[['Hours Studied', 'Previous Scores', 'Extracurricular Activities', 'Sleep Hours', 'Sample Question Papers Practiced']]
+for i in range(0, X_test.shape[0]):
+  if X_test.at[i, "Extracurricular Activities"] == "Yes":
+    X_test.at[i, "Extracurricular Activities"] = 1
+  elif X_test.at[i, "Extracurricular Activities"] == "No":
+    X_test.at[i, "Extracurricular Activities"] = 0
+X_test_norm = scaler.fit_transform(X_test)
 
-df = pd.DataFrame({
-    "x": x,
-    "y": y,
-    "idx": indices,
-    "rand": np.random.randn(num_points),
-})
+# make a prediction using sgdr.predict()
+y_pred_sgd = sgdr.predict(X_test_norm)
+# make a prediction using w,b. 
+y_pred = np.dot(X_test_norm, w_norm) + b_norm  
 
-st.altair_chart(alt.Chart(df, height=700, width=700)
-    .mark_point(filled=True)
-    .encode(
-        x=alt.X("x", axis=None),
-        y=alt.Y("y", axis=None),
-        color=alt.Color("idx", legend=None, scale=alt.Scale()),
-        size=alt.Size("rand", legend=None, scale=alt.Scale(range=[1, 150])),
-    ))
+test_dataset.insert(6, "H-index(as predicted)", y_pred, True)
+
+st.write(test_dataset.head())
+

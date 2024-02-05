@@ -1,3 +1,6 @@
 altair
 pandas
+matplotlib
+numpy
 streamlit
+scikit-learn
