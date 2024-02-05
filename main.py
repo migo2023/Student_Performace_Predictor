@@ -40,7 +40,7 @@ y_pred_sgd = sgdr.predict(X_test_norm)
 # make a prediction using w,b. 
 y_pred = np.dot(X_test_norm, w_norm) + b_norm  
 
-test_dataset.insert(6, "H-index(as predicted)", y_pred, True)
+test_dataset.insert(6, "H-index(as predicted)", y_pred_sgd, True)
 
 st.write(test_dataset.head())
 
